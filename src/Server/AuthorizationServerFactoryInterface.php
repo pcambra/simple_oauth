@@ -13,7 +13,7 @@ interface AuthorizationServerFactoryInterface {
    * @return \League\OAuth2\Server\AuthorizationServer
    *   The authorization server to process the requests.
    */
-  public function createInstance($grant_type_id);
+  public function createInstance($grant_type_id = 'implicit');
 
   /**
    * Get a grant object based on the grant type ID.

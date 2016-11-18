@@ -1,11 +1,11 @@
 <?php
 
-
 namespace Drupal\simple_oauth\Server;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Grant\ClientCredentialsGrant;
+use League\OAuth2\Server\Grant\ImplicitGrant;
 use League\OAuth2\Server\Grant\PasswordGrant;
 use League\OAuth2\Server\Grant\RefreshTokenGrant;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
@@ -92,7 +92,7 @@ class AuthorizationServerFactory implements AuthorizationServerFactoryInterface 
   /**
    * {@inheritdoc}
    */
-  public function createInstance($grant_type_id) {
+  public function createInstance($grant_type_id = 'implicit') {
     $grant = $this->grantFactory($grant_type_id);
     $server = new AuthorizationServer(
       $this->clientRepository,
@@ -114,6 +114,7 @@ class AuthorizationServerFactory implements AuthorizationServerFactoryInterface 
    * {@inheritdoc}
    */
   public function grantFactory($grant_type_id) {
+    // @TODO refactor this.
     if ($grant_type_id == 'password') {
       return new PasswordGrant($this->userRepository, $this->refreshTokenRepository);
     }
@@ -122,6 +123,9 @@ class AuthorizationServerFactory implements AuthorizationServerFactoryInterface 
     }
     elseif ($grant_type_id == 'client_credentials') {
       return new ClientCredentialsGrant();
+    }
+    elseif ($grant_type_id == 'implicit') {
+      return new ImplicitGrant($this->expiration);
     }
     throw new \InvalidArgumentException(sprintf('The grant type %s for OAuth2 does not exist.', $grant_type_id));
   }

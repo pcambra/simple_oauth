@@ -3,7 +3,7 @@
 namespace Drupal\simple_oauth\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Session\AccountInterface;
+use Drupal\simple_oauth\Entities\UserEntity;
 use Drupal\simple_oauth\Server\AuthorizationServerFactoryInterface;
 use GuzzleHttp\Psr7\Response;
 use League\OAuth2\Server\Exception\OAuthServerException;
@@ -30,12 +30,11 @@ class Oauth2Token extends ControllerBase {
   protected $authServerFactory;
 
   /**
-   * Constructs a CommentController object.
+   * Constructs a Oauth2Token object.
    *
-   * @param AccountInterface $current_user
-   *   The current user.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager service.
+   * @param \Symfony\Bridge\PsrHttpMessage\HttpMessageFactoryInterface $message_factory
+   * @param \Symfony\Bridge\PsrHttpMessage\HttpFoundationFactoryInterface $foundation_factory
+   * @param \Drupal\simple_oauth\Server\AuthorizationServerFactoryInterface $auth_server_factory
    */
   public function __construct(HttpMessageFactoryInterface $message_factory, HttpFoundationFactoryInterface $foundation_factory, AuthorizationServerFactoryInterface $auth_server_factory) {
     $this->messageFactory = $message_factory;
@@ -55,7 +54,7 @@ class Oauth2Token extends ControllerBase {
   }
 
   /**
-   * Proceses POST requests to /oauth/token.
+   * Processes POST requests to /oauth/token.
    */
   public function token(Request $request) {
     // Transform the HTTP foundation request object into a PSR-7 object. The
@@ -63,7 +62,7 @@ class Oauth2Token extends ControllerBase {
     $psr7_request = $this->messageFactory->createRequest($request);
     // Extract the grant type from the request body.
     $grant_type_id = $request->get('grant_type');
-    // Get the auth server object from that uses the Leage library.
+    // Get the auth server object from the League library.
     $auth_server = $this->authServerFactory->createInstance($grant_type_id);
     // Instantiate a new PSR-7 response object so the library can fill it.
     $response = new Response();
@@ -77,6 +76,26 @@ class Oauth2Token extends ControllerBase {
     // Transform the PSR-7 response into an HTTP foundation response so Drupal
     // can process it.
     return $this->foundationFactory->createResponse($response);
+  }
+
+  /**
+   * Processes GET requests to /oauth/authorize.
+   */
+  public function authorize(Request $request) {
+    // Transform the HTTP foundation request object into a PSR-7 object. The
+    // OAuth library expects a PSR-7 request.
+    $psr7_request = $this->messageFactory->createRequest($request);
+    // Get the auth server object from the League library.
+    $auth_server = $this->authServerFactory->createInstance();
+    $response = new Response();
+    $authRequest = $auth_server->validateAuthorizationRequest($psr7_request);
+    $authRequest->setUser(new UserEntity());
+    // Once the user has approved or denied the client update the status
+    // (true = approved, false = denied)
+    $authRequest->setAuthorizationApproved(true);
+
+    // Return the HTTP redirect response
+    return $auth_server->completeAuthorizationRequest($authRequest, $response);
   }
 
 }

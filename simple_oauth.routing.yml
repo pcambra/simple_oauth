@@ -90,3 +90,11 @@ oauth2_token.refresh:
   methods: [POST]
   requirements:
     _permission: 'access content'
+
+oauth2_token.authorize:
+  path: '/oauth/authorize'
+  defaults:
+    _controller: 'Drupal\simple_oauth\Controller\Oauth2Token::authorize'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
